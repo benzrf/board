@@ -9,6 +9,7 @@ import Data.Map
 import Control.Applicative
 import Control.Monad.Reader
 import Control.Monad.State
+import Control.Monad.Random
 
 type Player  = String
 data Players = Players {players :: [Player], current :: Player}
@@ -29,4 +30,6 @@ newtype Comm sh pl pr a =
 deriving instance Functor (Comm sh pl pr)
 deriving instance Applicative (Comm sh pl pr)
 deriving instance Monad (Comm sh pl pr)
+
+type Game s sh pl pr = ReaderT Players (StateT s (RandT StdGen (Comm sh pl pr)))
 
