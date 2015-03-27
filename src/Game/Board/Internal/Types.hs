@@ -25,11 +25,12 @@ data GameState sh pl =
   GameState {sharedF :: sh, playersF :: Map Player pl}
 
 newtype Comm sh pl pr a =
-  Comm {runComm :: ReaderT (CommFuncs sh pl pr) (StateT (GameState sh pl) IO) a}
+  Comm {runComm :: StateT (GameState sh pl) (ReaderT (CommFuncs sh pl pr) IO) a}
 
 deriving instance Functor (Comm sh pl pr)
 deriving instance Applicative (Comm sh pl pr)
 deriving instance Monad (Comm sh pl pr)
+deriving instance MonadIO (Comm sh pl pr)
 
 type Game s sh pl pr = ReaderT Players (StateT s (RandT StdGen (Comm sh pl pr)))
 
