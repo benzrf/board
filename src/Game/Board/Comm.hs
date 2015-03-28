@@ -1,4 +1,8 @@
-module Game.Board.Comm where
+module Game.Board.Comm
+  (Player, Comm, Game, Query(..),
+   shared', player',
+   shared, player, prompt)
+where
 
 import Data.Map as M
 import Control.Monad.State
