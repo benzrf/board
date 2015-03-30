@@ -7,13 +7,13 @@ module Game.Board.Internal.Types where
 
 import Data.Map
 import Control.Applicative
-import Control.Monad.Reader
 import Control.Monad.State
+import Control.Monad.Reader
 import Control.Monad.Random
 
 type Player  = String
 data Players = Players {players :: [Player], current :: Player}
-data Query pr a = forall re. Query (pr re, re -> a)
+data Query pr a = forall re. Query (pr re) (re -> a)
 
 data CommFuncs sh pl pr =
   CommFuncs {pushShared :: sh -> IO (),
@@ -35,4 +35,5 @@ deriving instance MonadIO (Comm sh pl pr)
 type Game s sh pl pr = ReaderT Players (StateT s (RandT StdGen (Comm sh pl pr)))
 type Initial s sh pl = Rand StdGen (s, sh, Rand StdGen pl)
 type Setup sh pl pr  = IO ([Player], CommFuncs sh pl pr)
+type Victory pr      = Player -> pr ()
 
