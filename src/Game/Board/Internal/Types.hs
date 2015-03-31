@@ -33,7 +33,7 @@ deriving instance Monad (Comm sh pl pr)
 deriving instance MonadIO (Comm sh pl pr)
 
 type Game s sh pl pr = ReaderT Players (StateT s (RandT StdGen (Comm sh pl pr)))
-type Initial s sh pl = Rand StdGen (s, sh, Rand StdGen pl)
 type Setup sh pl pr  = IO ([Player], CommFuncs sh pl pr)
+type Initial s sh pl = Rand StdGen (s, sh, Rand StdGen pl)
 type Victory pr      = Player -> pr ()
 

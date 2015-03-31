@@ -1,4 +1,7 @@
-module Game.Board.Run where
+module Game.Board.Run
+  (CommFuncs(..), Setup, Initial, Game, Victory,
+   runGame)
+where
 
 import qualified Data.Map as M
 import Control.Applicative
@@ -25,7 +28,7 @@ runGame setup initial turn vic = do
       comm =
         flip evalRandT gen'' .
         flip evalStateT s .
-        flip runReaderT (Players ps (head ps)) $
+        flip runReaderT (Players (tail ps) (head ps)) $ -- TODO give partiality descriptive error instead
         game
       io =
         flip runReaderT cf .
