@@ -1,6 +1,9 @@
 {-# LANGUAGE TemplateHaskell #-}
 
-module Game.Board.CommImpl where
+module Game.Board.CommImpl
+  (PromptRead,
+   genPR)
+where
 
 import Language.Haskell.TH
 
