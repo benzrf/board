@@ -1,7 +1,7 @@
 {-# LANGUAGE TemplateHaskell #-}
 
 module Game.Board.CommImpl
-  (PromptRead,
+  (PromptRead(..),
    genPR)
 where
 
