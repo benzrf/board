@@ -1,5 +1,5 @@
 module Game.Board.Comm
-  (Player, Players(..), Query(..), Comm, Game,
+  (Player, PlayerList(..), Query(..), Comm, GameM,
    shared', player',
    shared, player, prompt,
    curPlayer,
@@ -7,7 +7,6 @@ module Game.Board.Comm
 where
 
 import Data.Maybe
-import Data.Traversable
 import Control.Applicative
 import qualified Data.Map as M
 import Control.Monad.State
@@ -20,32 +19,33 @@ shared' s = Comm . StateT $ \(GameState sh pl) -> do
   when (sh' /= sh) $ asks pushShared >>= liftIO . ($sh')
   return (r, GameState sh' pl)
 
-shared :: Eq sh => State sh a -> Game s sh pl pr a
+shared :: Eq sh => State sh a -> GameM s sh pl pr a
 shared = lift . lift . lift . shared'
 
 player' :: Eq pl => Player -> State pl a -> Comm sh pl pr (Maybe a)
-player' p s = Comm . StateT $ \gs ->
-  case M.lookup p (playersF gs) of
+player' p s = Comm . StateT $ \gs@(GameState sh pls) ->
+  case M.lookup p pls of
     Nothing -> return (Nothing, gs)
     Just pl -> do
       let (r, pl') = runState s pl
       when (pl' /= pl) $ asks pushPlayer >>= liftIO . \f -> f p pl'
-      return (Just r, gs{playersF = M.insert p pl' (playersF gs)})
+      return (Just r, GameState sh (M.insert p pl' pls))
 
-player :: Eq pl => Player -> State pl a -> Game s sh pl pr (Maybe a)
+player :: Eq pl => Player -> State pl a -> GameM s sh pl pr (Maybe a)
 player p = lift . lift . lift . player' p
 
-curPlayer :: Eq pl => State pl a -> Game s sh pl pr (Maybe a)
-curPlayer s = asks current >>= flip player s
+curPlayer :: Eq pl => State pl a -> GameM s sh pl pr (Maybe a)
+curPlayer s = asks getCurrent >>= flip player s
 
-prompt :: [(Player, Query pr (Game s sh pl pr a))] -> Game s sh pl pr [(Player, Maybe a)]
-prompt r = (lift . lift . lift . Comm $ asks promptI) >>= ($r)
+prompt :: [(Player, Query pr (GameM s sh pl pr a))] ->
+          GameM s sh pl pr [(Player, Maybe a)]
+prompt r = (lift . lift . lift . Comm $ asks doQueries) >>= ($r)
 
-prompt1 :: Player -> pr re -> Game s sh pl pr (Maybe re)
+prompt1 :: Player -> pr re -> GameM s sh pl pr (Maybe re)
 prompt1 p pr = snd . head <$> prompt [(p, Query pr return)]
 
-promptAll :: pr re -> Game s sh pl pr (M.Map Player re)
+promptAll :: pr re -> GameM s sh pl pr (M.Map Player re)
 promptAll pr = M.fromList . mapMaybe sequenceA <$> do
-  ps <- liftA2 (:) (asks current) (asks players)
+  ps <- liftA2 (:) (asks getCurrent) (asks getPlayers)
   prompt (map (\p -> (p, Query pr return)) ps)
 

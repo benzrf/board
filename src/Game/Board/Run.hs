@@ -1,5 +1,5 @@
 module Game.Board.Run
-  (CommFuncs(..), Setup, Initial, Game, Victory,
+  (CommFuncs(..), Connector, Dealer, GameM,
    runGame)
 where
 
@@ -13,10 +13,10 @@ import Game.Board.Internal.Types
 -- ugly =(
 -- this is very bad
 runGame ::
-  Setup sh pl pr ->
-  Initial s sh pl ->
-  Game s sh pl pr Bool ->
-  Victory pr ->
+  Connector sh pl pr ->
+  Dealer s sh pl ->
+  GameM s sh pl pr Bool ->
+  (Player -> pr ()) ->
   IO ()
 runGame setup initial turn vic = do
   gen <- newStdGen
@@ -28,22 +28,22 @@ runGame setup initial turn vic = do
       comm =
         flip evalRandT gen'' .
         flip evalStateT s .
-        flip runReaderT (Players (tail ps) (head ps)) $ -- TODO give partiality descriptive error instead
+        flip runReaderT (PlayerList (tail ps) (head ps)) $ -- TODO give partiality descriptive error instead
         game
       io =
         flip runReaderT cf .
         flip evalStateT (GameState sh pl) .
-        runComm $
+        unwrapComm $
         comm
-  Players ps' w <- io
-  _ <- promptI cf (map (\p -> (p, Query (vic w) return)) (w:ps'))
+  PlayerList ps' w <- io
+  _ <- doQueries cf (map (\p -> (p, Query (vic w) return)) (w:ps'))
   return ()
 
-takeTurns :: Game s sh pl pr Bool -> Game s sh pl pr Players
+takeTurns :: GameM s sh pl pr Bool -> GameM s sh pl pr PlayerList
 takeTurns g = ReaderT go
-  where go pls@(Players (p:ps) c) = do
+  where go pls@(PlayerList (p:ps) c) = do
           w <- runReaderT g pls
           if w then return pls
-               else go (Players (ps ++ [c]) p)
+               else go (PlayerList (ps ++ [c]) p)
         go _ = error "No players?!"
 
