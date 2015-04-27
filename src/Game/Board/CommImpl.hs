@@ -5,24 +5,25 @@ module Game.Board.CommImpl
    genPR)
 where
 
+import Control.Applicative
 import Language.Haskell.TH
 
 class PromptRead pr where
   prReads :: pr re -> ReadS re
 
 genPR :: Name -> DecsQ
-genPR t = fmap pure $ instanceD (cxt []) ihead [genPRR t]
-  where ihead = (appT (conT ''PromptRead) (conT t))
+genPR t = pure <$> instanceD (cxt []) ihead [genBody t]
+  where ihead = appT (conT ''PromptRead) (conT t)
 
-patFor :: Con -> PatQ
-patFor (NormalC   n f) = conP n (wildP <$ f)
-patFor (RecC      n f) = conP n (wildP <$ f)
-patFor (InfixC  _ n _) = infixP wildP n wildP
-patFor (ForallC _ _ c) = patFor c
+anyWith :: Con -> PatQ
+anyWith (NormalC   n f) = conP n (wildP <$ f)
+anyWith (RecC      n f) = conP n (wildP <$ f)
+anyWith (InfixC  _ n _) = infixP wildP n wildP
+anyWith (ForallC _ _ c) = anyWith c
 
-genPRR :: Name -> DecQ
-genPRR t = do
+genBody :: Name -> DecQ
+genBody t = do
   TyConI (DataD _ _ _ cs _) <- reify t
-  let prClause c = clause [patFor c] (normalB [| reads |]) []
+  let prClause c = clause [anyWith c] (normalB [| reads |]) []
   funD 'prReads (map prClause cs)
 
